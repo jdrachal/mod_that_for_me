@@ -1,6 +1,6 @@
 
 # ModThatForMe!
-## Script allows configure mods easly for you and your friends
+## Script allows configure Lethal Company mods easly for you and your friends
 
 ## Usage
 1. Unzip it in your Lethal Company directory
