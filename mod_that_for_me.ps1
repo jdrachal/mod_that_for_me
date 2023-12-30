@@ -1,7 +1,13 @@
 $scriptPath = $MyInvocation.MyCommand.Path
 $scriptDirectory = Split-Path -Path $scriptPath -Parent
 $tempDir = $env:TEMP
-Set-ExecutionPolicy RemoteSigned
+
+if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
+    Write-Host "Warning!`nTo change ExecutionPolicy Run Windows Powershell as Administrator and call this script from console`n"
+} else {
+    Set-ExecutionPolicy RemoteSigned
+}
+
 
 $bepInExURL = "https://thunderstore.io/package/download/BepInEx/BepInExPack/5.4.2100/"
 $lcApiURL = "https://thunderstore.io/package/download/2018/LC_API/3.1.0/"
@@ -163,37 +169,77 @@ function ExtractBepInExPack {
 	
 }
 
-# Parse arguments
-foreach ($arg in $args) {
-    switch ($arg) {
-        '-Force' {
-            RemoveAllBepInExItems
+function Prompt-ExitConfirmation {
+    $response = Read-Host "Do you want to exit? (Y/N)"
+
+    if ($response -eq 'Y' -or $response -eq 'y') {
+        Write-Host "Exiting the script..."
+        exit 0
+    } else {
+        Write-Host "Continuing script execution..."
+    }
+}
+
+
+function Show-Menu {
+    Write-Host "Select an option:"
+    Write-Host "1. Update"
+    Write-Host "2. Clean and Update"
+    Write-Host "3. Clean"
+    Write-Host "4. Exit"
+
+    $choice = Read-Host "Enter your choice"
+
+    switch ($choice) {
+        '1' {
             break
         }
-        '-Clean' {
-            RemoveAllBepInExItems
+        '2' {
+			RemoveAllBepInExItems
+            break
+            
+        }
+        '3' {
+			RemoveAllBepInExItems
+            exit 0
+        }
+        '4' {
             exit 0
         }
         default {
-            Write-Host "Invalid argument: $arg"
-            exit 1
+            Write-Host "Invalid choice! Please enter a valid option."
+            Show-Menu
         }
     }
 }
 
-# Finish script if $bepInEx exists
-if (Test-Path -Path $bepInEx -PathType Container) {
-	Write-Host "BepInEx mod directory already exists"
-    exit 0
+function Main {
+	Show-Menu
+	
+	if (Test-Path -Path $bepInEx -PathType Container) {
+		Write-Host "BepInEx mod directory already exists"
+		Prompt-ExitConfirmation
+		Main
+	}
+
+	# Extract BepInExPack
+	ExtractBepInExPack
+
+	# Extract LcAPI
+	ExtractLcApi  
+
+	# Apply mods from file $urlsFile
+	ApplyModsFromFile
+
+	Write-Host "Finished!"
+	Write-Host "Press Enter or any key to exit..."
+	$null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
+	exit 0
 }
 
-# Extract BepInExPack
-ExtractBepInExPack
+Main
 
-# Extract LcAPI
-ExtractLcApi  
 
-# Apply mods from file $urlsFile
-ApplyModsFromFile
 
-Write-Host "Finished!"
+
+
