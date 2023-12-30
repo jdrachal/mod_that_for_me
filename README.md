@@ -7,7 +7,7 @@ Unzip downloaded package and 'Run with PowerShell'
 
 ![Screen_Capture_-_Dec_30__9_03_PM](https://github.com/jdrachal/mod_that_for_me/assets/89092342/0399f537-1a19-4e6f-96db-6e7950ddf1cb)
 
-Menu with option will show up - its self descriptive
+Menu with option selection will show up - its self descriptive
 ![image](https://github.com/jdrachal/mod_that_for_me/assets/89092342/2ba38b63-87b2-44c8-8d87-8fab14958d1e)
 
 
@@ -16,7 +16,7 @@ If update went well you should see
 
 
 ## Errors
-In case of any errors make sure that script is not locked.
+In case of any errors make sure that script is not blocked.
 To do so enter the properties then mark 'Unblock' checkbox and 'Apply' button
 
 ![Screen_Capture_-_Dec_30__9_00_PM](https://github.com/jdrachal/mod_that_for_me/assets/89092342/45c46cc2-d562-4ae0-b2e5-c5ca25d3e659)
