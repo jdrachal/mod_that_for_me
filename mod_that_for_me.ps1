@@ -1,6 +1,6 @@
 $scriptPath = $MyInvocation.MyCommand.Path
 $scriptDirectory = Split-Path -Path $scriptPath -Parent
-$bepInEx = Join-Path -Path $scriptDirectory -ChildPath "BepInEx"
+Set-ExecutionPolicy RemoteSigned
 
 $bepInExURL = "https://thunderstore.io/package/download/BepInEx/BepInExPack/5.4.2100/"
 $lcApiURL = "https://thunderstore.io/package/download/2018/LC_API/3.1.0/"
@@ -10,6 +10,55 @@ $urlsFile = ".\mod_urls.txt"
 
 # It needs update if BepInEx will contain any other items outside of BepInEx directory
 $bepInExItems = @("doorstop_config.ini", "winhttp.dll")
+
+# Define the name of the game you want to find
+$gameName = "Lethal Company"
+
+# Function to retrieve Steam library folders
+function Get-SteamLibraryFolders {
+    $steamFolder = (Get-ItemProperty -Path 'HKCU:\Software\Valve\Steam').SteamPath
+    $libraryFolders = @($steamFolder)
+
+    $libraryFoldersFile = Join-Path -Path $steamFolder -ChildPath 'steamapps\libraryfolders.vdf'
+
+    if (Test-Path $libraryFoldersFile) {
+        $libraryFoldersContent = Get-Content -Path $libraryFoldersFile -Raw
+
+        $matches = [regex]::Matches($libraryFoldersContent, '"path"\s*"(.*?)"')
+        foreach ($match in $matches) {
+            $libraryFolder = $match.Groups[1].Value
+            $libraryFolders += $libraryFolder
+        }
+    }
+
+    return $libraryFolders
+}
+
+# Function to find the game folder in Steam app manifest files
+function Find-SteamGameFolder($gameName, $libraryFolders) {
+    $gameFound = $false
+	$gameFolder = ""
+
+    foreach ($folder in $libraryFolders) {
+        $steamAppsFolder = Join-Path -Path $folder -ChildPath 'steamapps'
+		$gameFolder = Join-Path -Path $steamAppsFolder -ChildPath "common\$gameName"
+
+		if (Test-Path $gameFolder) {
+			#Write-Output "$gameName found at: $gameFolder"
+			$gameFound = $true
+		}
+    }
+
+    if (-not $gameFound) {
+        throw [System.IO.FileNotFoundException] "$file not found."
+    }
+	return $gameFolder
+}
+
+# Find the specified game in the Steam installation paths
+$steamLibraryFolders = Get-SteamLibraryFolders
+$gameFolder = Find-SteamGameFolder -gameName $gameName -libraryFolders $steamLibraryFolders
+$bepInEx = Join-Path -Path $gameFolder -ChildPath "BepInEx"
 
 function ApplyModsFromFile {
 	# Read URLs from the file
@@ -24,7 +73,7 @@ function ApplyModsFromFile {
 		Invoke-WebRequest -Uri $url -OutFile $outputFile
 		
 		# Unzip the downloaded ZIP file
-		Expand-Archive -Path $outputFile -DestinationPath . -Force
+		Expand-Archive -Path $outputFile -DestinationPath $gameFolder -Force
 		
 		Remove-Item -Path $outputFile -Force
 
@@ -32,7 +81,7 @@ function ApplyModsFromFile {
 	}
 
 
-	$pluginsDirectory = Join-Path -Path $PSScriptRoot -ChildPath "plugins"
+	$pluginsDirectory = Join-Path -Path $gameFolder -ChildPath "plugins"
 
 	if (Test-Path -Path $pluginsDirectory -PathType Container) {
 		# Move the "plugins" directory to the specified destination
@@ -49,16 +98,17 @@ function RemoveAllBepInExItems {
 		Remove-Item -Path $bepInEx -Recurse -Force
 	}
     foreach ($item in $bepInExItems) {
-		$itemToRemove = Join-Path -Path $scriptDirectory -ChildPath $item
-		if (Test-Path -Path $itemToRemove -PathType Container) {
+		$itemToRemove = Join-Path -Path $gameFolder -ChildPath $item
+		
+		if (Test-Path -Path $itemToRemove) {
 			Remove-Item -Path $itemToRemove -Recurse -Force
 		}
 	}
 }
 
 function ExtractLcApi {
-	$lcApiZip = "lcApi.zip"
-	$lcApiDir = Join-Path -Path $scriptDirectory -ChildPath "lcApi"
+	$lcApiZip = Join-Path -Path $gameFolder -ChildPath "lcApi.zip"
+	$lcApiDir = Join-Path -Path $gameFolder -ChildPath "lcApi"
 
 	# Download the ZIP file
 	Invoke-WebRequest -Uri $lcApiURL -OutFile $lcApiZip
@@ -74,7 +124,7 @@ function ExtractLcApi {
 	# Copy from temporary lcAPI\BepInEx\plugins dir to final BepInEx\plugins\2018-LC_API dir
 	# as version 3.1.0 needs direct copy with 2018-LC_API dir creation in BepInEx\plugins
 	$lcApiBepInExPluginsDir = Join-Path -Path $lcApiDir -ChildPath "BepInEx\plugins"
-	$lcApiBepInExPluginsDestDir = Join-Path -Path $scriptDirectory -ChildPath "BepInEx\plugins\2018-LC_API"
+	$lcApiBepInExPluginsDestDir = Join-Path -Path $gameFolder -ChildPath "BepInEx\plugins\2018-LC_API"
 	robocopy $lcApiBepInExPluginsDir $lcApiBepInExPluginsDestDir /MOVE /S
 
 	## Cleanup
@@ -86,7 +136,7 @@ function ExtractLcApi {
 }
 
 function ExtractBepInExPack {
-	$bepInExZip = "bepInEx.zip"
+	$bepInExZip = Join-Path -Path $gameFolder -ChildPath "bepInEx.zip"
 	$bepInExDir = Join-Path -Path $scriptDirectory -ChildPath "BepInExPack"
 
 	# Download the ZIP file
@@ -100,7 +150,7 @@ function ExtractBepInExPack {
 
 	# Move the content of the temporary directory to the current directory
 	foreach ($item in $tempDirContent) {
-		Move-Item -Path $item.FullName -Destination . -Force
+		Move-Item -Path $item.FullName -Destination $gameFolder -Force
 	}
 	
 	## Cleanup
@@ -144,3 +194,5 @@ ExtractLcApi
 
 # Apply mods from file $urlsFile
 ApplyModsFromFile
+
+Write-Host "Finished!"
