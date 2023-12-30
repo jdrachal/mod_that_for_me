@@ -1,5 +1,6 @@
 $scriptPath = $MyInvocation.MyCommand.Path
 $scriptDirectory = Split-Path -Path $scriptPath -Parent
+$tempDir = $env:TEMP
 Set-ExecutionPolicy RemoteSigned
 
 $bepInExURL = "https://thunderstore.io/package/download/BepInEx/BepInExPack/5.4.2100/"
@@ -67,7 +68,7 @@ function ApplyModsFromFile {
 	# Loop through each URL and download the files
 	foreach ($url in $urls) {
 		$filename = Split-Path -Leaf $url  # Extract filename from URL
-		$outputFile = "tmp.zip" #Join-Path -Path . -ChildPath $filename  # Set output file path
+		$outputFile = Join-Path -Path $tempDir -ChildPath "tmp.zip" #Join-Path -Path . -ChildPath $filename  # Set output file path
 		
 		# Download the file
 		Invoke-WebRequest -Uri $url -OutFile $outputFile
@@ -107,8 +108,8 @@ function RemoveAllBepInExItems {
 }
 
 function ExtractLcApi {
-	$lcApiZip = Join-Path -Path $gameFolder -ChildPath "lcApi.zip"
-	$lcApiDir = Join-Path -Path $gameFolder -ChildPath "lcApi"
+	$lcApiZip = Join-Path -Path $tempDir -ChildPath "lcApi.zip"
+	$lcApiDir = Join-Path -Path $tempDir -ChildPath "lcApi"
 
 	# Download the ZIP file
 	Invoke-WebRequest -Uri $lcApiURL -OutFile $lcApiZip
@@ -136,14 +137,14 @@ function ExtractLcApi {
 }
 
 function ExtractBepInExPack {
-	$bepInExZip = Join-Path -Path $gameFolder -ChildPath "bepInEx.zip"
-	$bepInExDir = Join-Path -Path $scriptDirectory -ChildPath "BepInExPack"
+	$bepInExZip = Join-Path -Path $tempDir -ChildPath "bepInEx.zip"
+	$bepInExDir = Join-Path -Path $tempDir -ChildPath "BepInExPack"
 
 	# Download the ZIP file
 	Invoke-WebRequest -Uri $bepInExURL -OutFile $bepInExZip
 
 	# Unzip bepInEx.zip into a temporary directory
-	Expand-Archive -Path $bepInExZip -DestinationPath . -Force
+	Expand-Archive -Path $bepInExZip -DestinationPath $tempDir -Force
 
 	# Get the content of the temporary directory
 	$tempDirContent = Get-ChildItem -Path $bepInExDir -Force
