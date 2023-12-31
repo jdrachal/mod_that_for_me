@@ -15,6 +15,9 @@ If update went well you should see
 ![image](https://github.com/jdrachal/mod_that_for_me/assets/89092342/2157886c-5289-433c-8c2d-f118af59637e)
 
 
+## Mod list
+Mod list is saved under mod_urls.txt file. You can modify it and share with your friends.
+
 ## Errors
 In case of any errors make sure that script is not blocked.
 To do so enter the properties then mark 'Unblock' checkbox and 'Apply' button
