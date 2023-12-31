@@ -16,7 +16,7 @@ If update went well you should see
 
 
 ## Mod list
-Mod list is saved under mod_urls.txt file. You can modify it and share with your friends.
+Mod list is saved under mod_urls.txt file. You can modify it and share with your friends. Stay with the convention so one url per one line!
 
 ## Errors
 In case of any errors make sure that script is not blocked.
